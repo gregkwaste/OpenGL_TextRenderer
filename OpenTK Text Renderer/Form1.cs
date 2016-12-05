@@ -75,8 +75,8 @@ namespace OpenTK_Text_Renderer
             //Compile Shaders
             string vvs, ffs;
             int vertex_shader_ob, fragment_shader_ob;
-            vvs = GLSL_Preprocessor.Parser("Shaders/Simple_VS.glsl");
-            ffs = GLSL_Preprocessor.Parser("Shaders/Simple_FS.glsl");
+            vvs = GLSL_Preprocessor.Parser("Shaders/Text_VS.glsl");
+            ffs = GLSL_Preprocessor.Parser("Shaders/Text_FS.glsl");
             //Compile Texture Shaders
             GLShaderHelper.CreateShaders(vvs, ffs, out vertex_shader_ob,
                     out fragment_shader_ob, out shader_program);
@@ -104,6 +104,8 @@ namespace OpenTK_Text_Renderer
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             //GL.ClearColor(System.Drawing.Color.Black);
             render();
+
+            glControl1.SwapBuffers();
             glControl1.Invalidate();
 
         }
@@ -140,137 +142,46 @@ namespace OpenTK_Text_Renderer
 
             foreach (GLText t in tobs)
                 t.render();
-
-            glControl1.SwapBuffers();
-
-        }
-
-        private void renderText(string text)
-        {
-            /*
-             * THIS FUNCTION WILL IMPLEMENT TEXT RENDERING
-             * 
-             */
-            float space = 0.14f;
-            float width = 0.14f;
-            float height = 0.14f;
-
-            //Check if font exists
-            if (mainfont == null) return;
-
-            //Create text objects
-            GLText gtex = new GLText();
-            //Load Image
-            gtex.GLImage = sampleTex;
-            gtex.program = shader_program;
-            //Allocate arrays
-            gtex.pints = new int[text.Length * 6];
-            gtex.puvs = new float[text.Length * 6 * 2];
-            gtex.pverts = new float[text.Length * 6 * 3];
-
-            //Construct float arrays
-            float startx = 0.0f;
-            float startid = 0;
-
-            for (int i = 0; i < text.Length; i++)
-            {
-                char c = text[i];
-                Glyph glph = mainfont.char_dict[c];
-                //Store a quad for every char
-
-                //Handle positions
-                // 0 
-                gtex.pverts[6 * 3 * i + 0] = i * space + 0.0f;
-                gtex.pverts[6 * 3 * i + 1] = height;
-                gtex.pverts[6 * 3 * i + 2] = 0.2f;
-                // 1 
-                gtex.pverts[6 * 3 * i + 3] = i * space + 0.0f;
-                gtex.pverts[6 * 3 * i + 4] = 0.0f;
-                gtex.pverts[6 * 3 * i + 5] = 0.2f;
-                // 2 
-                gtex.pverts[6 * 3 * i + 6] = i * space + width;
-                gtex.pverts[6 * 3 * i + 7] = height;
-                gtex.pverts[6 * 3 * i + 8] = 0.2f;
-                // 3 
-                gtex.pverts[6 * 3 * i + 9] = i * space + width;
-                gtex.pverts[6 * 3 * i + 10] = height;
-                gtex.pverts[6 * 3 * i + 11] = 0.2f;
-                // 4 
-                gtex.pverts[6 * 3 * i + 12] = i * space + 0.0f;
-                gtex.pverts[6 * 3 * i + 13] = 0.0f;
-                gtex.pverts[6 * 3 * i + 14] = 0.2f;
-                // 5 
-                gtex.pverts[6 * 3 * i + 15] = i * space + width;
-                gtex.pverts[6 * 3 * i + 16] = 0.0f;
-                gtex.pverts[6 * 3 * i + 17] = 0.2f;
-                
-
-                //Handle Indices
-                gtex.pints[6 * i + 0] = 4 * i + 0;
-                gtex.pints[6 * i + 1] = 4 * i + 1;
-                gtex.pints[6 * i + 2] = 4 * i + 2;
-                gtex.pints[6 * i + 3] = 4 * i + 3;
-                gtex.pints[6 * i + 4] = 4 * i + 4;
-                gtex.pints[6 * i + 5] = 4 * i + 5;
-
-                //Handle Uvs
-                //0
-                gtex.puvs[6 * 2 * i + 0] = glph.pos[0].X;
-                gtex.puvs[6 * 2 * i + 1] = glph.pos[0].Y;
-                //1
-                gtex.puvs[6 * 2 * i + 2] = glph.pos[0].X;
-                gtex.puvs[6 * 2 * i + 3] = glph.pos[1].Y;
-                //2
-                gtex.puvs[6 * 2 * i + 4] = glph.pos[1].X;
-                gtex.puvs[6 * 2 * i + 5] = glph.pos[0].Y;
-                //3
-                gtex.puvs[6 * 2 * i + 6] = glph.pos[1].X;
-                gtex.puvs[6 * 2 * i + 7] = glph.pos[0].Y;
-                //4
-                gtex.puvs[6 * 2 * i + 8] = glph.pos[0].X;
-                gtex.puvs[6 * 2 * i + 9] = glph.pos[1].Y;
-                //5
-                gtex.puvs[6 * 2 * i + 10] = glph.pos[1].X;
-                gtex.puvs[6 * 2 * i + 11] = glph.pos[1].Y;
-            }
-
-            //Create OpenGL buffers
-            
-            //Generate Geometry VBOs
-            GL.GenBuffers(1, out gtex.vbo);
-            GL.GenBuffers(1, out gtex.ebo);
-            GL.GenBuffers(1, out gtex.uvbo);
-
-            //Vertex Buffer
-            int vsize = sizeof(float) * gtex.pverts.Length;
-            //Upload vertex buffer
-            GL.BindBuffer(BufferTarget.ArrayBuffer, gtex.vbo);
-            //Allocate to NULL
-            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(vsize), (IntPtr)null, BufferUsageHint.StaticDraw);
-            //Add verts data
-            GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, (IntPtr)vsize, gtex.pverts);
-
-            //UV Buffer
-            int uvsize = sizeof(float) * gtex.puvs.Length;
-            //Upload uv buffer
-            GL.BindBuffer(BufferTarget.ArrayBuffer, gtex.uvbo);
-            //Allocate to NULL
-            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(uvsize), (IntPtr)null, BufferUsageHint.StaticDraw);
-            //Add verts data
-            GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, (IntPtr)uvsize, gtex.puvs);
-
-            //Upload index buffer
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, gtex.ebo);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(sizeof(int) * gtex.pints.Length), gtex.pints, BufferUsageHint.StaticDraw);
-
-            //Store text object
-            tobs.Add(gtex);
-
         }
 
         private void prepareFont()
         {
 
+        }
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            mainfont.space = (float) numericUpDown1.Value;
+
+            GLText t = tobs[0];
+            tobs.RemoveAt(0);
+            tobs.Add(mainfont.renderText(t.text,t.pos,t.scale));
+
+            glControl1.Invalidate();
+        }
+
+        private void numericUpDown2_ValueChanged(object sender, EventArgs e)
+        {
+            mainfont.width = (float)numericUpDown2.Value;
+
+            GLText t = tobs[0];
+            string text = t.text;
+            tobs.RemoveAt(0);
+            tobs.Add(mainfont.renderText(t.text, t.pos, t.scale));
+
+            glControl1.Invalidate();
+        }
+
+        private void numericUpDown3_ValueChanged(object sender, EventArgs e)
+        {
+            mainfont.height = (float)numericUpDown3.Value;
+
+            GLText t = tobs[0];
+            string text = t.text;
+            tobs.RemoveAt(0);
+            tobs.Add(mainfont.renderText(t.text, t.pos, t.scale));
+
+            glControl1.Invalidate();
         }
 
         private void loadCharmapToolStripMenuItem_Click(object sender, EventArgs e)
@@ -290,66 +201,21 @@ namespace OpenTK_Text_Renderer
 
             //Testing some inits       
             mainfont.initFromImage(bm);
+            mainfont.tex = bm.GLid;
+            mainfont.program = shader_program;
+
+            //Set default settings
+            mainfont.space =  0.14f;
+            mainfont.width =  0.14f;
+            mainfont.height = 0.14f;
 
             //Add some text for rendering
-            renderText("Fuck you Shaw!");
+            tobs.Add(mainfont.renderText("Life Sucks :(", new Vector2(0.2f,0.2f), 2.0f));
         }
     }
 
 
-    class GLText
-    {
-        public float[] pverts;
-        public float[] puvs;
-        public int[] pints;
-
-        public int GLImage;
-
-        //GL Buffers
-        public int vbo;
-        public int uvbo;
-        public int ebo;
-        public int program;
-        
-
-        public void render()
-        {
-            // Attach to Shaders
-            int vpos, uvpos;
-            //Vertex attribute
-            //Bind vertex buffer
-            GL.BindBuffer(BufferTarget.ArrayBuffer, this.vbo);
-            vpos = GL.GetAttribLocation(program, "vPosition");
-            GL.VertexAttribPointer(vpos, 3, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexAttribArray(vpos);
-            
-            //Bind uv buffer
-            GL.BindBuffer(BufferTarget.ArrayBuffer, this.uvbo);
-            uvpos = GL.GetAttribLocation(program, "uvPosition");
-            GL.VertexAttribPointer(uvpos, 2, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexAttribArray(uvpos);
-
-            //Bind elem buffer
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
-
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, this.GLImage);
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-
-
-            //RENDERING PHASE
-            //GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
-            GL.DrawArrays(PrimitiveType.Triangles, 0, this.pints.Length);
-            GL.DisableVertexAttribArray(vpos);
-            GL.DisableVertexAttribArray(uvpos);
-            
-        }
-
-    }
+    
 
 
 }
